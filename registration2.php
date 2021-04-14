@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
  <meta charset="utf-8">
-<!-- registration.php - Register new racers - edit, delete 
-  Student Name
-  Written:  Current Date 
-  Revised:  
+<!-- registration2.php - Register new racers - edit, delete 
+  Max Burdette
+  04/14/2021 
   -->
  <title>SunRun Registration</title>
 <link rel="stylesheet" type="text/css" href="registration.css">
@@ -26,8 +25,8 @@
    createConnection();
     // Is this a return visit?
     if(array_key_exists('hidIsReturning',$_POST)) {
-        echo "<hr /><strong>\$_POST: </strong>";
-        print_r($_POST);
+        //echo "<hr /><strong>\$_POST: </strong>";
+        //print_r($_POST);
 
         // Did the user select a runner from the list?
         // 'new' is the value of the first item on the runner list box 
@@ -50,8 +49,8 @@
                 "gender" => $row['gender'],
                 "sponsor" => $row['sponsorName']
             ];
-            displayMessage("\$thisRunner Array: ", "green");
-            print_r($thisRunner);
+            //displayMessage("\$thisRunner Array: ", "green");
+            //print_r($thisRunner);
         }// end if lstRunner 
      
         // Determine which button may have been clicked
@@ -115,9 +114,9 @@
             // Set up a prepared statement
             if($stmt = $conn->prepare($sql)) {
                 // Pass the parameters
-                echo "\$fName is: $fName<br />";
-                echo "\$lName is: $lName<br />";
-                echo "\$phone is: $phone<br />";
+                //echo "\$fName is: $fName<br />";
+                //echo "\$lName is: $lName<br />";
+                //echo "\$phone is: $phone<br />";
                 $stmt->bind_param("sss", $fName, $lName, $phone) ;
                 if($stmt->errno) {
                     displayMessage("stmt prepare( ) had error.", "red" ); 
@@ -168,16 +167,55 @@
                     if($stmt->errno) {
                         displayMessage("Could not execute prepared statement", "red" );
                     }
+                    displayMessage($fName." ".$lName." was added.", "green");
               
                     // Free results
                     $stmt->free_result( );
                     // Close the statement
                     $stmt->close( );
 
+                    //Store temporary id 
+
+
+                    $sql = "(SELECT id_runner FROM runner
+                    WHERE fName = ? AND lName = ?)";
+                    if($stmt = $conn->prepare($sql))
+                        {
+                        //Pass parameters
+                        $stmt->bind_param('ss', $fName, $lName);
+
+                        if($stmt->errno) {
+                            displayMessage("stmt prepare( ) had error.", "red" ); 
+                        }
+          
+                        // Execute the query
+                        $stmt->execute();
+                        if($stmt->errno) {
+                            displayMessage("Could not execute prepared statement", "red" );
+                        }
+                        $stmt->store_result( );
+                        // Bind result variables
+                        // one variable for each field in the SELECT
+                        // This is the variable that fetch( ) will use to store the result
+                        $stmt->bind_result($tempID);
+   
+                        // Fetch the value - returns the next row in the result set
+                        //Stores tempid for inserting sponsor
+                        while($stmt->fetch( )) {
+                        // output the result
+                            $tempID;
+                        }
+          
+                        // Free results
+                        $stmt->free_result( );
+                        // Close the statement
+                        $stmt->close( );
+                    }
+
                     // Add to Table:sponsor containing the foreign key id_runner
                     $sql = "INSERT INTO sponsor (id_sponsor, sponsorName, id_runner) 
-                    VALUES (NULL, ?, (SELECT id_runner FROM runner
-                    WHERE fName = ? AND lName = ?))";
+                    VALUES (NULL, ?, ?)";
+                    //If there is no sponsor it doesn't run the query
                     if ($sponsor =="") 
                     {
                         displayMessage("No Sponsor added.", "red");
@@ -187,7 +225,7 @@
                         if($stmt = $conn->prepare($sql))
                         {
                         //Pass parameters
-                        $stmt->bind_param('sss', $sponsor, $fName, $lName);
+                        $stmt->bind_param('si', $sponsor, $tempID);
 
                         if($stmt->errno) {
                             displayMessage("stmt prepare( ) had error.", "red" ); 
@@ -216,6 +254,12 @@
         // UPDATE   
         // = = = = = = = = = = = = = = = = = = = 
         case 'update':
+            $id = $thisRunner['id_runner'];
+            $fName = $_POST['txtFName'];
+            $lName = $_POST['txtLName'];
+            $phone = unformatPhone($_POST['txtPhone']);
+            $gender = $_POST['lstGender'];
+            $sponsor = $_POST['txtSponsor'];
             //displayMessage("UPDATE button pushed.", "green");
             // Check for empty name 
             if ($_POST['txtFName']=="" || $_POST['txtLName']=="") {
@@ -231,11 +275,14 @@
                 //                          lName='LastTest',
                 //                           phone='1112223333'
                 //                          WHERE id_runner = 4";
-                $sql = "UPDATE runner SET fName='" . $_POST['txtFName'] . "', "
-                . " lName = '" . $_POST['txtLName'] . "', "
-                . " phone = '" . unformatPhone($_POST['txtPhone']) . "', "
-                . " gender = '" . $_POST['lstGender'] . "' 
-                WHERE id_runner = " . $thisRunner['id_runner'];
+                // $sql = "UPDATE runner SET fName='" . $_POST['txtFName'] . "', "
+                // . " lName = '" . $_POST['txtLName'] . "', "
+                // . " phone = '" . unformatPhone($_POST['txtPhone']) . "', "
+                // . " gender = '" . $_POST['lstGender'] . "' 
+                // WHERE id_runner = " . $thisRunner['id_runner'];
+
+                //Run procedure
+                $sql = "CALL updateRunner(".$id.", '".$fName."', '".$lName."', '".$gender."', '".$phone."');";
                 $result = $conn->query($sql);
                 if($result) {
                     $isSuccessful = true;
@@ -270,7 +317,7 @@
     }
     else // or, a first time visitor?
     {
-      echo '<h1>Welcome</h1>';
+      //echo '<h1>Welcome</h1>';
     } // end of if new else returning
 ?>
 

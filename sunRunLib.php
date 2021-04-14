@@ -1,7 +1,7 @@
 <?PHP
 /* sunRunLib.php - library of common PHP functions 
    used with SunRun registration application.
-   Student Name
+   Max Burdette
    Written: Current Date
 */
 
